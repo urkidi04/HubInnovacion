@@ -535,7 +535,14 @@ body{margin:0}
     $("btnLogin").disabled=true; m.textContent="Enviando enlace…";
     const { error } = await sb.auth.signInWithOtp({ email, options:{ emailRedirectTo: location.href.split("#")[0] } });
     $("btnLogin").disabled=false;
-    if(error){ m.className="hint err"; m.textContent="No se pudo enviar el enlace: "+error.message; return; }
+    if(error){
+      const msg=String(error.message||"").toLowerCase();
+      m.className="hint err";
+      m.textContent = (error.status===429 || msg.includes("rate limit"))
+        ? "Se alcanzó el límite de correos por hora. Espera unos minutos e intenta de nuevo, o avisa al administrador."
+        : "No se pudo enviar el enlace: "+error.message;
+      return;
+    }
     m.className="hint ok"; m.textContent=`Listo. Revisa ${email} y abre el enlace para entrar.`;
   });
   $("btnOut").addEventListener("click", async ()=>{ await sb.auth.signOut(); rows=[]; render(); showLogin(); });
