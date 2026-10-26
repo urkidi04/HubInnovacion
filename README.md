@@ -12,7 +12,7 @@ App web para capturar las tareas que el equipo optimiza con IA: tiempo antes y d
 1. Crea un proyecto en [supabase.com](https://supabase.com).
 2. Abre **SQL Editor → New query**, pega el contenido de [`supabase/schema.sql`](supabase/schema.sql) y ejecútalo.
 3. En **Authentication → URL Configuration**:
-   - **Site URL**: la URL de GitHub Pages, p. ej. `https://urkidi04.github.io/<repo>/`
+   - **Site URL**: la URL de GitHub Pages, p. ej. `https://urkidi04.github.io/HubInnovacion/`
    - **Redirect URLs**: agrega la misma URL.
 4. En **Authentication → Providers → Email**, deja activado *Email* (enlace mágico).
 
