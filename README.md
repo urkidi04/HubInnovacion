@@ -4,7 +4,7 @@ App web para capturar las tareas que el equipo optimiza con IA: tiempo antes y d
 
 - Sitio estático (un solo `index.html`) publicado con GitHub Pages.
 - Base compartida en **Supabase** (Postgres) con actualizaciones en vivo.
-- Acceso con correo y contraseña; las cuentas las crea el administrador en Supabase (Authentication → Users → Add user → Create new user, con *Auto Confirm User*). Solo se permiten correos `@bafar.com.mx` (validado en el navegador y en las políticas RLS de la base).
+- Acceso con enlace mágico al correo; solo se permiten correos `@bafar.com.mx` (validado en el navegador y en las políticas RLS de la base).
 
 ## Puesta en marcha
 

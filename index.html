@@ -133,13 +133,11 @@ body{margin:0}
 
   <section class="login" id="login" hidden aria-labelledby="h-login">
     <h2 id="h-login">Iniciar sesión</h2>
-    <p>Entra con tu correo corporativo y tu contraseña. Si aún no tienes cuenta, pídela al administrador.</p>
+    <p>Escribe tu correo corporativo. Te enviaremos un enlace para entrar, sin contraseña.</p>
     <form id="loginForm" novalidate>
       <label for="loginEmail">Correo</label>
-      <input id="loginEmail" type="email" autocomplete="username" placeholder="nombre@bafar.com.mx" required>
-      <label for="loginPwd">Contraseña</label>
-      <input id="loginPwd" type="password" autocomplete="current-password" required>
-      <button type="submit" class="primary" id="btnLogin">Entrar</button>
+      <input id="loginEmail" type="email" autocomplete="email" placeholder="nombre@bafar.com.mx" required>
+      <button type="submit" class="primary" id="btnLogin">Enviarme el enlace</button>
       <span class="hint" id="loginMsg" role="status"></span>
     </form>
   </section>
@@ -534,20 +532,18 @@ body{margin:0}
     m.className="hint";
     if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ m.className="hint err"; m.textContent="Escribe un correo válido."; return; }
     if(DOMAIN && !email.endsWith("@"+DOMAIN)){ m.className="hint err"; m.textContent=`Usa tu correo @${DOMAIN}.`; return; }
-    const password=$("loginPwd").value;
-    if(!password){ m.className="hint err"; m.textContent="Escribe tu contraseña."; return; }
-    $("btnLogin").disabled=true; m.textContent="Entrando…";
-    const { error } = await sb.auth.signInWithPassword({ email, password });
+    $("btnLogin").disabled=true; m.textContent="Enviando enlace…";
+    const { error } = await sb.auth.signInWithOtp({ email, options:{ emailRedirectTo: location.href.split("#")[0] } });
     $("btnLogin").disabled=false;
     if(error){
       const msg=String(error.message||"").toLowerCase();
       m.className="hint err";
-      m.textContent = msg.includes("invalid login") ? "Correo o contraseña incorrectos."
-        : msg.includes("not confirmed") ? "Tu cuenta no está confirmada. Pide al administrador que la confirme."
-        : "No se pudo entrar: "+error.message;
+      m.textContent = (error.status===429 || msg.includes("rate limit"))
+        ? "Se alcanzó el límite de correos por hora. Espera unos minutos e intenta de nuevo, o avisa al administrador."
+        : "No se pudo enviar el enlace: "+error.message;
       return;
     }
-    $("loginPwd").value=""; m.textContent="";
+    m.className="hint ok"; m.textContent=`Listo. Revisa ${email} y abre el enlace para entrar.`;
   });
   $("btnOut").addEventListener("click", async ()=>{ await sb.auth.signOut(); rows=[]; render(); showLogin(); });
 
