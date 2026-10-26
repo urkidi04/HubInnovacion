@@ -1,0 +1,570 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Registro de Ahorro con IA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: herramienta de dos zonas — formulario de captura arriba, resumen en franja, tabla filtrable abajo */
+:root{
+  --bg:#f5f6f8; --surface:#ffffff; --ink:#1b2230; --muted:#5d6779; --line:#dde1e8;
+  --accent:#1f5fbf; --accent-soft:#e7eefa; --save:#127a52; --save-soft:#e3f4ec; --warn:#b4401f; --warn-soft:#fbe9e3;
+  --f-sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#12161d; --surface:#1a2029; --ink:#e6e9ef; --muted:#9aa3b2; --line:#2c3440;
+  --accent:#6ea2f0; --accent-soft:#1d2a3f; --save:#4cc694; --save-soft:#173227; --warn:#f08a6a; --warn-soft:#3a2119; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12161d; --surface:#1a2029; --ink:#e6e9ef; --muted:#9aa3b2; --line:#2c3440;
+  --accent:#6ea2f0; --accent-soft:#1d2a3f; --save:#4cc694; --save-soft:#173227; --warn:#f08a6a; --warn-soft:#3a2119; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-sans);font-size:15px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 48px}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:24px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+h1{font-size:1.6rem;margin:0;font-weight:700;letter-spacing:-.01em;text-wrap:balance}
+.sub{color:var(--muted);margin:4px 0 0;max-width:60ch}
+.status{font-size:.8rem;color:var(--muted);font-family:var(--f-mono)}
+.status.err{color:var(--warn)}
+section{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:20px}
+h2{font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0 0 14px;font-weight:600}
+form .grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px 16px}
+.f{display:flex;flex-direction:column;gap:5px;min-width:0}
+.f.span2{grid-column:span 2}.f.span4{grid-column:1/-1}
+label{font-size:.82rem;font-weight:500}
+label .req{color:var(--warn)}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px;width:100%;min-width:0}
+textarea{resize:vertical;min-height:62px}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.calc{font-family:var(--f-mono);font-variant-numeric:tabular-nums;padding:8px 10px;border-radius:6px;background:var(--save-soft);color:var(--save);font-weight:500;border:1px solid transparent}
+.calc.neg{background:var(--warn-soft);color:var(--warn)}
+.hint{font-size:.76rem;color:var(--muted)}
+.hint.err{color:var(--warn)}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px;align-items:center}
+button{font:inherit;font-weight:500;border-radius:6px;padding:8px 16px;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+:root[data-theme="dark"] button.primary{color:#0d1420}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) button.primary{color:#0d1420}}
+button:disabled{opacity:.5;cursor:not-allowed}
+button.link{border:none;background:none;padding:4px 6px;color:var(--accent)}
+button.link.del{color:var(--warn)}
+.editing-tag{font-size:.8rem;background:var(--accent-soft);color:var(--accent);padding:3px 10px;border-radius:99px}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.kpi{background:var(--surface);padding:14px 18px;display:flex;flex-direction:column;gap:2px}
+.kpi .v{font-family:var(--f-mono);font-size:1.5rem;font-weight:500;font-variant-numeric:tabular-nums}
+.kpi .v.save{color:var(--save)}
+.kpi .l{font-size:.78rem;color:var(--muted)}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px;align-items:center}
+.toolbar input,.toolbar select{width:auto;flex:1 1 180px}
+.toolbar .grow{flex:1 1 auto}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;min-width:1100px;font-size:.86rem}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;background:var(--bg);white-space:nowrap;cursor:pointer;user-select:none}
+th.nosort{cursor:default}
+th .arr{color:var(--accent)}
+td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+th.num{text-align:right}
+td.date{font-family:var(--f-mono);font-size:.8rem;white-space:nowrap;font-variant-numeric:tabular-nums}
+td.red{color:var(--save);font-weight:500}
+tr:last-child td{border-bottom:none}
+th.sel,td.sel{width:36px;text-align:center;padding-inline:6px}
+input.ck{width:16px;height:16px;padding:0;accent-color:var(--accent);cursor:pointer}
+th.acts,td.acts{position:sticky;right:0;background:var(--surface);box-shadow:-1px 0 0 var(--line);white-space:nowrap}
+th.acts{background:var(--bg)}
+tr.picked td{background:var(--accent-soft)}
+tr.picked td.acts{background:var(--accent-soft)}
+.bulk{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:10px 12px;margin-bottom:14px;border-radius:8px;background:var(--warn-soft);color:var(--warn);font-size:.88rem}
+.bulk b{font-weight:600}
+button.danger{background:var(--warn);border-color:var(--warn);color:#fff}
+:root[data-theme="dark"] button.danger{color:#1a0d08}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) button.danger{color:#1a0d08}}
+.chip{display:inline-block;font-size:.74rem;padding:2px 8px;border-radius:99px;background:var(--accent-soft);color:var(--accent);white-space:nowrap}
+.pct{font-size:.72rem;color:var(--muted)}
+.empty{padding:36px 16px;text-align:center;color:var(--muted)}
+.dur{font-size:.72rem;color:var(--muted);display:block}
+.names{display:flex;flex-wrap:wrap;gap:6px;align-items:center;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:5px 6px;min-width:0;cursor:text}
+.names:focus-within{outline:2px solid var(--accent);outline-offset:1px}
+.names input{border:none;background:transparent;padding:3px 4px;flex:1 1 140px;width:auto}
+.names input:focus-visible{outline:none}
+#chips{display:contents}
+.nchip{display:inline-flex;align-items:center;gap:2px;background:var(--accent-soft);color:var(--accent);border-radius:99px;padding:2px 2px 2px 10px;font-size:.84rem;max-width:100%}
+.nchip button{border:none;background:none;color:inherit;padding:0 6px;font-size:1rem;line-height:1.2;cursor:pointer;border-radius:99px}
+.pchips{display:flex;flex-direction:column;gap:2px}
+.pname{white-space:nowrap}
+.shared{display:inline-block;font-size:.74rem;padding:2px 8px;border-radius:99px;white-space:nowrap}
+.shared.si{background:var(--save-soft);color:var(--save);font-weight:500}
+.shared.no{color:var(--muted);background:var(--bg)}
+.confirm{display:inline-flex;gap:4px;align-items:center;font-size:.8rem}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:9px 18px;border-radius:6px;font-size:.88rem;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.show{opacity:1}
+@media (max-width:860px){form .grid,.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.f.span2{grid-column:1/-1}}
+@media (max-width:480px){form .grid{grid-template-columns:minmax(0,1fr)}.f.span2{grid-column:auto}}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0}
+.who{display:flex;flex-wrap:wrap;align-items:center;gap:10px;font-size:.84rem;color:var(--muted)}
+.who b{color:var(--ink);font-weight:500}
+#app{display:flex;flex-direction:column;gap:24px}
+.login{max-width:440px;width:100%;margin:24px auto 0;display:flex;flex-direction:column;gap:14px}
+.login p{margin:0;color:var(--muted);max-width:60ch}
+.login form{display:flex;flex-direction:column;gap:10px}
+.login .ok{color:var(--save)}
+.setup{background:var(--warn-soft);color:var(--warn);border-radius:8px;padding:10px 14px;font-size:.88rem}
+.setup code{font-family:var(--f-mono)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Registro de Ahorro con IA</h1>
+      <p class="sub">Captura cada tarea optimizada con IA: cuánto tardaba antes, cuánto tarda ahora y en qué periodo se aplicó.</p>
+    </div>
+    <div class="who"><span class="status" id="status">Conectando…</span><span id="who" hidden>Sesión: <b id="whoEmail"></b> <button type="button" class="link" id="btnOut">Cerrar sesión</button></span></div>
+  </header>
+
+  <p class="setup" id="setup" hidden>Falta configurar la base compartida: llena <code>config.js</code> con los datos de Supabase. Mientras tanto, los registros solo se guardan en este navegador.</p>
+
+  <section class="login" id="login" hidden aria-labelledby="h-login">
+    <h2 id="h-login">Iniciar sesión</h2>
+    <p>Escribe tu correo corporativo. Te enviaremos un enlace para entrar, sin contraseña.</p>
+    <form id="loginForm" novalidate>
+      <label for="loginEmail">Correo</label>
+      <input id="loginEmail" type="email" autocomplete="email" placeholder="nombre@bafar.com.mx" required>
+      <button type="submit" class="primary" id="btnLogin">Enviarme el enlace</button>
+      <span class="hint" id="loginMsg" role="status"></span>
+    </form>
+  </section>
+
+  <div id="app" hidden>
+  <section aria-labelledby="h-form">
+    <h2 id="h-form">Nuevo registro</h2>
+    <form id="form" novalidate>
+      <div class="grid">
+        <div class="f span2">
+          <label for="persona">Nombre(s) de la persona <span class="req">*</span></label>
+          <div class="names" id="names"><span id="chips"></span><input id="persona" list="personas" autocomplete="off" placeholder="Escribe un nombre y presiona Enter"></div>
+          <datalist id="personas"></datalist>
+          <span class="hint">Presiona Enter o coma para agregar otro nombre.</span>
+        </div>
+        <div class="f span2">
+          <label for="tarea">Nombre de la tarea <span class="req">*</span></label>
+          <input id="tarea" required>
+        </div>
+        <div class="f">
+          <label for="clasificacion">Clasificación <span class="req">*</span></label>
+          <select id="clasificacion" required>
+            <option value="">Selecciona…</option>
+            <option>Aplicación</option>
+            <option>Proceso</option>
+            <option>Reporte</option>
+            <option>Automatización</option>
+            <option>Soporte</option>
+            <option>Documentación</option>
+            <option>Otro</option>
+          </select>
+        </div>
+        <div class="f span2">
+          <label for="proceso">Proceso o App (IA) <span class="req">*</span></label>
+          <input id="proceso" list="procesos" autocomplete="off" required>
+          <datalist id="procesos"></datalist>
+        </div>
+        <div class="f">
+          <label for="compartida">¿Es compartida?</label>
+          <select id="compartida"><option value="No">No</option><option value="Sí">Sí</option></select>
+          <span class="hint">Se marca Sí al agregar más de un nombre.</span>
+        </div>
+        <div class="f">
+          <label for="fechaInicio">Fecha inicio <span class="req">*</span></label>
+          <input id="fechaInicio" type="date" required>
+        </div>
+        <div class="f">
+          <label for="fechaFin">Fecha fin <span class="req">*</span></label>
+          <input id="fechaFin" type="date" required>
+          <span class="hint" id="fechaHint"></span>
+        </div>
+        <div class="f">
+          <label for="antes">Tiempo antes (min) <span class="req">*</span></label>
+          <input id="antes" type="number" min="0" step="1" inputmode="numeric" required>
+        </div>
+        <div class="f">
+          <label for="ahora">Tiempo ahora (min) <span class="req">*</span></label>
+          <input id="ahora" type="number" min="0" step="1" inputmode="numeric" required>
+        </div>
+        <div class="f">
+          <label for="reduccion">Reducción de tiempo (min)</label>
+          <output id="reduccion" class="calc">—</output>
+        </div>
+        <div class="f">
+          <label for="fechaRegistro">Fecha de registro</label>
+          <output id="fechaRegistro" class="calc" style="background:var(--bg);color:var(--muted)">Automática al guardar</output>
+        </div>
+        <div class="f span2">
+          <label for="comentario">Comentario / Impacto</label>
+          <textarea id="comentario" placeholder="Ej. Menor espera del usuario"></textarea>
+        </div>
+      </div>
+      <div class="actions">
+        <button type="submit" class="primary" id="btnSave">Guardar registro</button>
+        <button type="button" id="btnCancel" hidden>Cancelar edición</button>
+        <span class="editing-tag" id="editTag" hidden>Editando registro</span>
+        <span class="hint err" id="formErr" role="alert"></span>
+      </div>
+    </form>
+  </section>
+
+  <div class="kpis" aria-label="Resumen">
+    <div class="kpi"><span class="v" id="kCount">0</span><span class="l">Registros</span></div>
+    <div class="kpi"><span class="v save" id="kMin">0</span><span class="l">Minutos ahorrados</span></div>
+    <div class="kpi"><span class="v save" id="kHrs">0.0</span><span class="l">Horas ahorradas</span></div>
+    <div class="kpi"><span class="v" id="kPct">0%</span><span class="l">Reducción promedio</span></div>
+  </div>
+
+  <section aria-labelledby="h-list">
+    <h2 id="h-list">Registros capturados</h2>
+    <div class="toolbar">
+      <input id="q" type="search" placeholder="Buscar persona, tarea o proceso" aria-label="Buscar">
+      <select id="fClas" aria-label="Filtrar por clasificación"><option value="">Todas las clasificaciones</option></select>
+      <select id="fComp" aria-label="Filtrar por compartida"><option value="">Compartidas y no compartidas</option><option value="Sí">Solo compartidas</option><option value="No">Solo no compartidas</option></select>
+      <input id="fDesde" type="date" aria-label="Desde (fecha inicio)" title="Fecha inicio desde">
+      <input id="fHasta" type="date" aria-label="Hasta (fecha fin)" title="Fecha fin hasta">
+      <button type="button" id="btnCsv">Exportar CSV</button>
+    </div>
+    <div class="bulk" id="bulk" hidden>
+      <span id="bulkTxt"></span>
+      <button type="button" class="danger" id="btnBulkDel">Eliminar seleccionados</button>
+      <button type="button" class="danger" id="btnBulkYes" hidden>Sí, eliminar</button>
+      <button type="button" id="btnBulkNo">Cancelar</button>
+    </div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr>
+          <th class="nosort sel"><input type="checkbox" class="ck" id="ckAll" aria-label="Seleccionar todos los visibles"></th>
+          <th data-k="persona">Persona(s)</th>
+          <th data-k="compartida">Compartida</th>
+          <th data-k="tarea">Tarea</th>
+          <th data-k="clasificacion">Clasificación</th>
+          <th data-k="proceso">Proceso o App (IA)</th>
+          <th data-k="antes" class="num">Antes</th>
+          <th data-k="ahora" class="num">Ahora</th>
+          <th data-k="reduccion" class="num">Reducción</th>
+          <th data-k="comentario">Comentario / Impacto</th>
+          <th data-k="fechaRegistro">Registro</th>
+          <th data-k="fechaInicio">Inicio</th>
+          <th data-k="fechaFin">Fin</th>
+          <th class="nosort acts">Acciones</th>
+        </tr></thead>
+        <tbody id="tbody"><tr><td colspan="14" class="empty">Cargando registros…</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+  </div>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const CFG = window.APP_CONFIG || {};
+  const DOMAIN = (CFG.ALLOWED_DOMAIN || "").toLowerCase();
+  const TABLE = "registros";
+  const LS = "ahorro-ia-local";
+  let sb = null, rows = [], editingId = null, pendingDel = null, canWrite = true;
+  const picked = new Set();
+  let names = [], compTouched = false;
+  let sortK = "fechaRegistro", sortDir = "desc";
+
+  function toast(m){const t=$("toast");t.textContent=m;t.classList.add("show");clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove("show"),2400)}
+  function status(m,err){const s=$("status");s.textContent=m;s.classList.toggle("err",!!err)}
+  const esc = s => String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  const num = v => { const n = Number(v); return isFinite(n) ? n : 0; };
+  const fmt = n => n.toLocaleString("es-MX");
+  function stamp(d){d=d||new Date();const p=n=>String(n).padStart(2,"0");return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`}
+  function days(a,b){ if(!a||!b) return null; return Math.round((new Date(b)-new Date(a))/864e5)+1; }
+
+  // --- cálculo en vivo
+  function recalc(){
+    const a=$("antes").value, h=$("ahora").value, o=$("reduccion");
+    if(a===""||h===""){o.textContent="—";o.classList.remove("neg");return}
+    const r=num(a)-num(h); const pct=num(a)>0?Math.round(r/num(a)*100):0;
+    o.textContent = `${fmt(r)} min · ${pct}%`; o.classList.toggle("neg", r<0);
+  }
+  function checkDates(){
+    const i=$("fechaInicio").value,f=$("fechaFin").value,h=$("fechaHint");
+    if(i&&f&&f<i){h.textContent="La fecha fin no puede ser anterior a la de inicio.";h.className="hint err";return false}
+    const d=days(i,f); h.textContent = d?`${d} día${d===1?"":"s"} de duración`:""; h.className="hint"; return true;
+  }
+  ["antes","ahora"].forEach(id=>$(id).addEventListener("input",recalc));
+  ["fechaInicio","fechaFin"].forEach(id=>$(id).addEventListener("input",checkDates));
+
+  // --- nombres (varias personas)
+  const fields=["tarea","clasificacion","proceso","compartida","antes","ahora","comentario","fechaInicio","fechaFin"];
+  function namesOf(r){ return Array.isArray(r.personas)&&r.personas.length ? r.personas : String(r.persona||"").split(",").map(s=>s.trim()).filter(Boolean); }
+  function compOf(r){ return r.compartida || (namesOf(r).length>1?"Sí":"No"); }
+  function syncComp(){ if(!compTouched) $("compartida").value = names.length>1?"Sí":"No"; }
+  function renderChips(){
+    $("chips").innerHTML = names.map((n,i)=>`<span class="nchip">${esc(n)}<button type="button" data-rm="${i}" aria-label="Quitar ${esc(n)}">×</button></span>`).join("");
+    $("persona").placeholder = names.length ? "Agregar otro nombre" : "Escribe un nombre y presiona Enter";
+    syncComp();
+  }
+  function addName(v){
+    String(v||"").split(",").map(s=>s.trim()).filter(Boolean).forEach(n=>{ if(!names.some(x=>x.toLowerCase()===n.toLowerCase())) names.push(n); });
+    renderChips();
+  }
+  function flushName(){ const i=$("persona"); if(i.value.trim()){ addName(i.value); i.value=""; } }
+  $("persona").addEventListener("keydown",e=>{
+    if(e.key==="Enter"||e.key===","){ e.preventDefault(); flushName(); }
+    else if(e.key==="Backspace" && !e.target.value && names.length){ names.pop(); renderChips(); }
+  });
+  $("persona").addEventListener("input",e=>{
+    const v=e.target.value;
+    if(v.includes(",")){ addName(v); e.target.value=""; return; }
+    if(!e.inputType || e.inputType==="insertReplacementText"){ if([...$("personas").options].some(o=>o.value===v)){ addName(v); e.target.value=""; } }
+  });
+  $("persona").addEventListener("blur",flushName);
+  $("chips").addEventListener("click",e=>{ const b=e.target.closest("button[data-rm]"); if(!b) return; names.splice(+b.dataset.rm,1); renderChips(); $("persona").focus(); });
+  $("names").addEventListener("click",e=>{ if(e.target.id==="names") $("persona").focus(); });
+  $("compartida").addEventListener("change",()=>{ compTouched=true; });
+
+  // --- formulario
+  function readForm(){
+    const o={}; fields.forEach(k=>o[k]=$(k).value.trim());
+    o.personas=[...names]; o.persona=names.join(", ");
+    o.antes=num(o.antes); o.ahora=num(o.ahora); o.reduccion=o.antes-o.ahora; return o;
+  }
+  function validate(){
+    const miss=[]; flushName(); if(!names.length) miss.push("Nombre de la persona");
+    [["tarea","Nombre de la tarea"],["clasificacion","Clasificación"],["proceso","Proceso o App"],["fechaInicio","Fecha inicio"],["fechaFin","Fecha fin"],["antes","Tiempo antes"],["ahora","Tiempo ahora"]]
+      .forEach(([k,l])=>{ if($(k).value.trim()==="") miss.push(l); });
+    if(miss.length) return "Falta capturar: "+miss.join(", ")+".";
+    if(num($("antes").value)<0||num($("ahora").value)<0) return "Los tiempos no pueden ser negativos.";
+    if(!checkDates()) return "Corrige el rango de fechas.";
+    return "";
+  }
+  function resetForm(){
+    $("form").reset(); editingId=null; names=[]; compTouched=false; renderChips(); recalc(); checkDates();
+    $("btnSave").textContent="Guardar registro"; $("btnCancel").hidden=true; $("editTag").hidden=true;
+    $("fechaRegistro").textContent="Automática al guardar"; $("formErr").textContent="";
+  }
+  $("btnCancel").addEventListener("click",resetForm);
+
+  $("form").addEventListener("submit", async e=>{
+    e.preventDefault();
+    const err=validate(); $("formErr").textContent=err; if(err) return;
+    const data=readForm(); $("btnSave").disabled=true;
+    try{
+      if(editingId){ await save(editingId, data); toast("Registro actualizado"); }
+      else { data.fechaRegistro=stamp(); await save(null, data); toast("Registro guardado"); }
+      resetForm();
+    }catch(ex){
+      console.error(ex);
+      $("formErr").textContent = "No se pudo guardar. " + (ex && ex.message ? ex.message : "Intenta de nuevo.");
+    }finally{ $("btnSave").disabled=!canWrite; }
+  });
+
+  // --- almacenamiento: Supabase o, sin configuración, local
+  function fromDb(d){
+    const p = Array.isArray(d.personas) ? d.personas : [];
+    return { id:d.id, personas:p, persona:p.join(", "), compartida:d.compartida, tarea:d.tarea||"", clasificacion:d.clasificacion||"",
+      proceso:d.proceso||"", antes:d.antes, ahora:d.ahora, reduccion:d.reduccion ?? (num(d.antes)-num(d.ahora)),
+      comentario:d.comentario||"", fechaRegistro:d.fecha_registro?stamp(new Date(d.fecha_registro)):"",
+      fechaInicio:d.fecha_inicio||"", fechaFin:d.fecha_fin||"", creadoPor:d.creado_por_email||"" };
+  }
+  function toDb(o){
+    return { personas:o.personas, compartida:o.compartida, tarea:o.tarea, clasificacion:o.clasificacion, proceso:o.proceso,
+      antes:o.antes, ahora:o.ahora, comentario:o.comentario||null, fecha_inicio:o.fechaInicio||null, fecha_fin:o.fechaFin||null };
+  }
+  async function load(){
+    if(!sb){ return; }
+    const { data, error } = await sb.from(TABLE).select("*").order("fecha_registro",{ascending:false});
+    if(error){ status("No se pudieron leer los registros: "+error.message, true); return; }
+    rows = data.map(fromDb); render();
+  }
+  async function save(id, body){
+    if(sb){
+      const q = id ? sb.from(TABLE).update(toDb(body)).eq("id",id) : sb.from(TABLE).insert(toDb(body));
+      const { error } = await q; if(error) throw error; await load(); return;
+    }
+    if(id){ rows=rows.map(r=>r.id===id?{...r,...body,id}:r); } else { rows.push({...body,id:"l"+Date.now()}); }
+    persistLocal(); render();
+  }
+  async function removeMany(ids){
+    if(sb){ const { error } = await sb.from(TABLE).delete().in("id",ids); if(error) throw error; await load(); return; }
+    rows=rows.filter(r=>!ids.includes(r.id)); persistLocal(); render();
+  }
+  function persistLocal(){ try{ localStorage.setItem(LS, JSON.stringify(rows)); }catch(_){} }
+  function loadLocal(){ try{ rows=JSON.parse(localStorage.getItem(LS)||"[]"); }catch(_){ rows=[]; } }
+
+  // --- tabla
+  function filtered(){
+    const q=$("q").value.trim().toLowerCase(), c=$("fClas").value, fcv=$("fComp").value, d1=$("fDesde").value, d2=$("fHasta").value;
+    let list=rows.filter(r=>{
+      if(c && r.clasificacion!==c) return false;
+      if(fcv && compOf(r)!==fcv) return false;
+      if(q && ![r.persona,r.tarea,r.proceso,r.comentario].join(" ").toLowerCase().includes(q)) return false;
+      if(d1 && (r.fechaInicio||"")<d1) return false;
+      if(d2 && (r.fechaFin||"")>d2) return false;
+      return true;
+    });
+    const numK=["antes","ahora","reduccion"].includes(sortK);
+    list.sort((a,b)=>{ let x=sortK==="compartida"?compOf(a):a[sortK], y=sortK==="compartida"?compOf(b):b[sortK];
+      if(numK){x=num(x);y=num(y)} else {x=String(x??"");y=String(y??"")}
+      const r = numK ? x-y : x.localeCompare(y,"es"); return sortDir==="asc"?r:-r; });
+    return list;
+  }
+  function render(){
+    const list=filtered(), tb=$("tbody");
+    const tAntes=list.reduce((s,r)=>s+num(r.antes),0), tRed=list.reduce((s,r)=>s+num(r.reduccion),0);
+    $("kCount").textContent=fmt(list.length); $("kMin").textContent=fmt(tRed);
+    $("kHrs").textContent=(tRed/60).toLocaleString("es-MX",{minimumFractionDigits:1,maximumFractionDigits:1});
+    $("kPct").textContent=(tAntes>0?Math.round(tRed/tAntes*100):0)+"%";
+    const uniq=k=>[...new Set(rows.map(r=>r[k]).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"es"));
+    const allNames=[...new Set(rows.flatMap(namesOf))].sort((a,b)=>a.localeCompare(b,"es"));
+    $("personas").innerHTML=allNames.filter(n=>!names.includes(n)).map(v=>`<option value="${esc(v)}">`).join("");
+    $("procesos").innerHTML=uniq("proceso").map(v=>`<option value="${esc(v)}">`).join("");
+    const fc=$("fClas"), cur=fc.value;
+    fc.innerHTML=`<option value="">Todas las clasificaciones</option>`+uniq("clasificacion").map(v=>`<option${v===cur?" selected":""}>${esc(v)}</option>`).join("");
+    document.querySelectorAll("th[data-k]").forEach(th=>{
+      th.querySelector(".arr")?.remove();
+      if(th.dataset.k===sortK){const s=document.createElement("span");s.className="arr";s.textContent=sortDir==="asc"?" ↑":" ↓";th.appendChild(s)}
+    });
+    [...picked].forEach(id=>{ if(!rows.some(r=>r.id===id)) picked.delete(id); });
+    const nPick=list.filter(r=>picked.has(r.id)).length;
+    const ca=$("ckAll"); ca.disabled=!canWrite||!list.length; ca.checked=!!list.length&&nPick===list.length; ca.indeterminate=nPick>0&&nPick<list.length;
+    $("bulk").hidden=!canWrite||picked.size===0;
+    if(picked.size && $("btnBulkYes").hidden){ $("bulkTxt").innerHTML=`<b>${picked.size}</b> registro${picked.size===1?"":"s"} seleccionado${picked.size===1?"":"s"}`; }
+    if(!list.length){
+      tb.innerHTML=`<tr><td colspan="14" class="empty">${rows.length?"Ningún registro coincide con los filtros.":"Aún no hay registros. Captura el primero con el formulario de arriba."}</td></tr>`;
+      return;
+    }
+    tb.innerHTML=list.map(r=>{
+      const pct=num(r.antes)>0?Math.round(num(r.reduccion)/num(r.antes)*100):0, d=days(r.fechaInicio,r.fechaFin);
+      const act = !canWrite ? "" : (pendingDel===r.id
+        ? `<span class="confirm">¿Eliminar? <button class="link del" data-act="yes" data-id="${esc(r.id)}">Sí</button><button class="link" data-act="no">No</button></span>`
+        : `<button class="link" data-act="edit" data-id="${esc(r.id)}">Editar</button><button class="link del" data-act="del" data-id="${esc(r.id)}">Eliminar</button>`);
+      const sel = canWrite ? `<input type="checkbox" class="ck" data-pick="${esc(r.id)}"${picked.has(r.id)?" checked":""} aria-label="Seleccionar registro de ${esc(r.persona)}">` : "";
+      return `<tr${picked.has(r.id)?' class="picked"':""}>
+        <td class="sel">${sel}</td>
+        <td><div class="pchips">${namesOf(r).map(n=>`<span class="pname">${esc(n)}</span>`).join("")}</div></td>
+        <td>${compOf(r)==="Sí"?`<span class="shared si">Sí · ${namesOf(r).length}</span>`:`<span class="shared no">No</span>`}</td>
+        <td>${esc(r.tarea)}</td>
+        <td><span class="chip">${esc(r.clasificacion)}</span></td><td>${esc(r.proceso)}</td>
+        <td class="num">${fmt(num(r.antes))}</td><td class="num">${fmt(num(r.ahora))}</td>
+        <td class="num red">${fmt(num(r.reduccion))}<span class="pct dur">${pct}%</span></td>
+        <td>${esc(r.comentario)}</td>
+        <td class="date">${esc(r.fechaRegistro)}</td>
+        <td class="date">${r.fechaInicio?esc(r.fechaInicio):"—"}</td>
+        <td class="date">${r.fechaFin?esc(r.fechaFin):"—"}${d?`<span class="dur">${d} día${d===1?"":"s"}</span>`:""}</td>
+        <td class="acts">${act}</td></tr>`;
+    }).join("");
+  }
+  document.querySelectorAll("th[data-k]").forEach(th=>th.addEventListener("click",()=>{
+    const k=th.dataset.k; if(sortK===k) sortDir=sortDir==="asc"?"desc":"asc"; else {sortK=k;sortDir="asc"} render();
+  }));
+  ["q","fClas","fComp","fDesde","fHasta"].forEach(id=>$(id).addEventListener("input",render));
+
+  // --- selección y borrado
+  $("tbody").addEventListener("change", e=>{
+    const c=e.target.closest("input[data-pick]"); if(!c) return;
+    c.checked?picked.add(c.dataset.pick):picked.delete(c.dataset.pick); resetBulk(); render();
+  });
+  $("ckAll").addEventListener("change", e=>{
+    filtered().forEach(r=>e.target.checked?picked.add(r.id):picked.delete(r.id)); resetBulk(); render();
+  });
+  function resetBulk(){ $("btnBulkDel").hidden=false; $("btnBulkYes").hidden=true; }
+  $("btnBulkDel").addEventListener("click",()=>{
+    $("btnBulkDel").hidden=true; $("btnBulkYes").hidden=false;
+    $("bulkTxt").innerHTML=`¿Eliminar <b>${picked.size}</b> registro${picked.size===1?"":"s"}? No se puede deshacer.`;
+    $("btnBulkYes").focus();
+  });
+  $("btnBulkNo").addEventListener("click",()=>{ picked.clear(); resetBulk(); render(); });
+  $("btnBulkYes").addEventListener("click", async ()=>{
+    const ids=[...picked]; $("btnBulkYes").disabled=true;
+    try{ await removeMany(ids); ids.forEach(id=>picked.delete(id)); if(ids.includes(editingId)) resetForm();
+      toast(`${ids.length} registro${ids.length===1?"":"s"} eliminado${ids.length===1?"":"s"}`); }
+    catch(ex){ toast("No se pudieron eliminar: "+(ex.message||"")); }
+    $("btnBulkYes").disabled=false; resetBulk(); render();
+  });
+
+  $("tbody").addEventListener("click", async e=>{
+    const b=e.target.closest("button[data-act]"); if(!b) return;
+    const id=b.dataset.id, act=b.dataset.act;
+    if(act==="edit"){
+      const r=rows.find(x=>x.id===id); if(!r) return;
+      fields.forEach(k=>$(k).value=r[k]??""); editingId=id;
+      names=[...namesOf(r)]; compTouched=true; renderChips(); $("compartida").value=compOf(r); recalc(); checkDates();
+      $("btnSave").textContent="Guardar cambios"; $("btnCancel").hidden=false; $("editTag").hidden=false;
+      $("fechaRegistro").textContent=r.fechaRegistro||"—";
+      $("form").scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"}); $("persona").focus();
+    }else if(act==="del"){ pendingDel=id; render(); }
+    else if(act==="no"){ pendingDel=null; render(); }
+    else if(act==="yes"){ pendingDel=null; try{ await removeMany([id]); toast("Registro eliminado"); if(editingId===id) resetForm(); }catch(ex){ toast("No se pudo eliminar: "+(ex.message||"")); render(); } }
+  });
+
+  // --- CSV
+  $("btnCsv").addEventListener("click",()=>{
+    const head=["Nombre de la persona","Compartida","Nombre de la Tarea","Clasificación","Proceso o App (IA)","Tiempo Antes (min)","Tiempo Ahora (min)","Reducción de tiempo (min)","Comentario / Impacto","Fecha de Registro","Fecha Inicio","Fecha Fin","Capturado por"];
+    const keys=["persona","compartida","tarea","clasificacion","proceso","antes","ahora","reduccion","comentario","fechaRegistro","fechaInicio","fechaFin","creadoPor"];
+    const q=v=>{const s=String(v??"");return /[",\n;]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s};
+    const csv="﻿"+[head.join(","),...filtered().map(r=>keys.map(k=>q(k==="compartida"?compOf(r):k==="persona"?namesOf(r).join(", "):r[k])).join(","))].join("\r\n");
+    const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
+    const a=document.createElement("a"); a.href=url; a.download=`ahorro-ia-${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1000);
+  });
+
+  // --- sesión
+  function showApp(email){
+    $("login").hidden=true; $("app").hidden=false; $("who").hidden=false; $("whoEmail").textContent=email||"";
+  }
+  function showLogin(){ $("login").hidden=false; $("app").hidden=true; $("who").hidden=true; }
+  $("loginForm").addEventListener("submit", async e=>{
+    e.preventDefault();
+    const email=$("loginEmail").value.trim().toLowerCase(), m=$("loginMsg");
+    m.className="hint";
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ m.className="hint err"; m.textContent="Escribe un correo válido."; return; }
+    if(DOMAIN && !email.endsWith("@"+DOMAIN)){ m.className="hint err"; m.textContent=`Usa tu correo @${DOMAIN}.`; return; }
+    $("btnLogin").disabled=true; m.textContent="Enviando enlace…";
+    const { error } = await sb.auth.signInWithOtp({ email, options:{ emailRedirectTo: location.href.split("#")[0] } });
+    $("btnLogin").disabled=false;
+    if(error){ m.className="hint err"; m.textContent="No se pudo enviar el enlace: "+error.message; return; }
+    m.className="hint ok"; m.textContent=`Listo. Revisa ${email} y abre el enlace para entrar.`;
+  });
+  $("btnOut").addEventListener("click", async ()=>{ await sb.auth.signOut(); rows=[]; render(); showLogin(); });
+
+  let realtime=null, rt=null;
+  function subscribe(){
+    if(realtime) return;
+    realtime = sb.channel("registros-cambios")
+      .on("postgres_changes",{event:"*",schema:"public",table:TABLE},()=>{ clearTimeout(rt); rt=setTimeout(load,300); })
+      .subscribe(s=>{ if(s==="SUBSCRIBED") status("Registros compartidos · en vivo"); });
+  }
+
+  async function start(){
+    recalc(); renderChips();
+    const ready = CFG.SUPABASE_URL && CFG.SUPABASE_ANON_KEY && window.supabase;
+    if(!ready){
+      $("setup").hidden=false; loadLocal(); showApp(""); $("who").hidden=true;
+      status("Modo local: los datos solo se guardan en este navegador"); render(); return;
+    }
+    sb = window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY);
+    sb.auth.onAuthStateChange((_ev, session)=>{
+      if(session){ showApp(session.user.email); status("Registros compartidos"); load(); subscribe(); }
+      else { showLogin(); status(""); }
+    });
+    const { data } = await sb.auth.getSession();
+    if(!data.session){ showLogin(); status(""); }
+  }
+  start();
+})();
+</script>
+</body>
+</html>
