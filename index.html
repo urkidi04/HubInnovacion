@@ -249,15 +249,15 @@ body{margin:0}
           <th data-k="persona">Persona(s)</th>
           <th data-k="compartida">Compartida</th>
           <th data-k="tarea">Tarea</th>
+          <th data-k="fechaInicio">Fecha inicio</th>
+          <th data-k="fechaFin">Fecha fin</th>
           <th data-k="clasificacion">Clasificación</th>
           <th data-k="proceso">Proceso o App (IA)</th>
           <th data-k="antes" class="num">Antes</th>
           <th data-k="ahora" class="num">Ahora</th>
           <th data-k="reduccion" class="num">Reducción</th>
           <th data-k="comentario">Comentario / Impacto</th>
-          <th data-k="fechaRegistro">Registro</th>
-          <th data-k="fechaInicio">Inicio</th>
-          <th data-k="fechaFin">Fin</th>
+          <th data-k="fechaRegistro">Fecha registro</th>
           <th class="nosort acts">Acciones</th>
         </tr></thead>
         <tbody id="tbody"><tr><td colspan="14" class="empty">Cargando registros…</td></tr></tbody>
@@ -457,13 +457,13 @@ body{margin:0}
         <td><div class="pchips">${namesOf(r).map(n=>`<span class="pname">${esc(n)}</span>`).join("")}</div></td>
         <td>${compOf(r)==="Sí"?`<span class="shared si">Sí · ${namesOf(r).length}</span>`:`<span class="shared no">No</span>`}</td>
         <td>${esc(r.tarea)}</td>
+        <td class="date">${r.fechaInicio?esc(r.fechaInicio):"—"}</td>
+        <td class="date">${r.fechaFin?esc(r.fechaFin):"—"}${d?`<span class="dur">${d} día${d===1?"":"s"}</span>`:""}</td>
         <td><span class="chip">${esc(r.clasificacion)}</span></td><td>${esc(r.proceso)}</td>
         <td class="num">${fmt(num(r.antes))}</td><td class="num">${fmt(num(r.ahora))}</td>
         <td class="num red">${fmt(num(r.reduccion))}<span class="pct dur">${pct}%</span></td>
         <td>${esc(r.comentario)}</td>
         <td class="date">${esc(r.fechaRegistro)}</td>
-        <td class="date">${r.fechaInicio?esc(r.fechaInicio):"—"}</td>
-        <td class="date">${r.fechaFin?esc(r.fechaFin):"—"}${d?`<span class="dur">${d} día${d===1?"":"s"}</span>`:""}</td>
         <td class="acts">${act}</td></tr>`;
     }).join("");
   }
