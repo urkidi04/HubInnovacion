@@ -47,3 +47,13 @@ Sin `config.js` configurado, la app funciona en *modo local*: cada navegador gua
 | Fecha inicio / Fecha fin | Obligatorias; la fin no puede ser anterior |
 | Fecha de registro | Automática |
 | Comentario / Impacto | Opcional |
+
+## Instalar como app (PWA)
+
+La página se puede instalar con su propio ícono y ventana:
+
+- **Computadora (Chrome o Edge):** botón **Instalar app** arriba a la derecha, o el ícono de instalar en la barra de direcciones.
+- **Android (Chrome):** botón **Instalar app**, o menú ⋮ → **Instalar aplicación**.
+- **iPhone / iPad (Safari):** **Compartir** → **Agregar a pantalla de inicio**.
+
+Al publicar cambios, la app instalada los toma sola la siguiente vez que se abre con conexión. Si cambias archivos que el service worker guarda, sube también el número de `VERSION` en `sw.js`.
