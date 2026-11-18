@@ -99,12 +99,17 @@ tfoot td.hot{color:var(--warn)}
 
   <section id="login" class="card" hidden>
     <h2 style="margin:0;font-size:1.05rem">Entrar</h2>
-    <p class="hint" style="margin:4px 0 0">Te enviamos un enlace de acceso a tu correo de Bafar.</p>
+    <p class="hint" style="margin:4px 0 0">Usa tu cuenta de Microsoft de Bafar (la misma de Outlook y Teams).</p>
+    <button class="primary" id="btnMs" type="button" style="width:100%;margin-top:12px;display:flex;gap:8px;justify-content:center;align-items:center">
+      <svg width="16" height="16" viewBox="0 0 21 21" aria-hidden="true"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg>
+      Entrar con Microsoft</button>
+    <p class="hint" id="msMsg"></p>
+    <details style="margin-top:6px"><summary class="hint" style="cursor:pointer">Otra opción: enlace por correo</summary>
     <form id="loginForm">
       <input id="loginEmail" type="email" autocomplete="email" placeholder="nombre@bafar.com.mx" required>
       <button class="primary" type="submit">Enviar enlace</button>
       <span class="hint" id="loginMsg"></span>
-    </form>
+    </form></details>
   </section>
 
   <section id="setup" class="card" hidden>
@@ -326,13 +331,20 @@ tfoot td.hot{color:var(--warn)}
   // ---------- acceso ----------
   function showLogin(){ $("login").hidden=false; $("app").hidden=true; $("who").hidden=true; $("btnOut").hidden=true; }
   function showApp(email){ me=(email||"").toLowerCase(); $("login").hidden=true; $("who").hidden=false; $("who").textContent=me; $("btnOut").hidden=false; }
+  $("btnMs").addEventListener("click",async()=>{
+    $("msMsg").textContent="Abriendo Microsoft…";
+    const {error}=await sb.auth.signInWithOAuth({provider:"azure",options:{scopes:"email",redirectTo:location.href.split("#")[0].split("?")[0]}});
+    if(error) $("msMsg").textContent="Error: "+error.message;
+  });
   $("loginForm").addEventListener("submit",async ev=>{
     ev.preventDefault();
     const email=$("loginEmail").value.trim().toLowerCase();
     if(!email.endsWith("@"+DOMAIN)){ $("loginMsg").textContent="Usa tu correo @"+DOMAIN; return; }
     $("loginMsg").textContent="Enviando…";
+    const slow=setTimeout(()=>{ $("loginMsg").textContent="El envío de correo está tardando; usa mejor «Entrar con Microsoft»."; },8000);
     const {error}=await sb.auth.signInWithOtp({email,options:{emailRedirectTo:location.href.split("#")[0]}});
-    $("loginMsg").textContent=error?("Error: "+error.message):"Listo. Revisa tu correo y abre el enlace en este navegador.";
+    clearTimeout(slow);
+    $("loginMsg").textContent=error?("No se pudo enviar el correo ("+error.message+"). Usa «Entrar con Microsoft»."):"Listo. Revisa tu correo y abre el enlace en este navegador.";
   });
   $("btnOut").addEventListener("click",async()=>{ await sb.auth.signOut(); emps=[]; marks=new Map(); showLogin(); status(""); });
 
