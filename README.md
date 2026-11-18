@@ -57,3 +57,14 @@ La página se puede instalar con su propio ícono y ventana:
 - **iPhone / iPad (Safari):** **Compartir** → **Agregar a pantalla de inicio**.
 
 Al publicar cambios, la app instalada los toma sola la siguiente vez que se abre con conexión. Si cambias archivos que el service worker guarda, sube también el número de `VERSION` en `sw.js`.
+
+---
+
+## Pronóstico de Vacaciones CCT (`/vacaciones/`)
+
+Calendario tipo Excel (1 dic 2026 – 31 ene 2027) donde los colaboradores de la unidad organizativa **CCT** (Dirección de Sistemas y sub-unidades, objeto O 50034323 en SAP HCM) marcan sus días: **V** vacaciones, **G** guardia, **P** permiso. Usa el mismo proyecto de Supabase y el mismo acceso por correo `@bafar.com.mx`.
+
+- URL: `https://urkidi04.github.io/HubInnovacion/vacaciones/`
+- Esquema: [`supabase/vacaciones.sql`](supabase/vacaciones.sql). La plantilla de empleados (nombres y números de empleado tomados de SAP) se carga con un script aparte que **no** se publica en este repo.
+- Agrega `https://urkidi04.github.io/HubInnovacion/vacaciones/` en **Authentication → URL Configuration → Redirect URLs**.
+- Botón **Descargar Excel**: genera la hoja con el mismo formato (meses combinados, fines de semana y festivos sombreados, V en verde).

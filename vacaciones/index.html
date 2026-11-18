@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pronóstico de Vacaciones CCT · Dic 2026 – Ene 2027</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#f5f6f8; --surface:#ffffff; --ink:#1b2230; --muted:#5d6779; --line:#d4d9e1; --grid:#c9ced8;
+  --accent:#1f5fbf; --accent-soft:#e7eefa; --warn:#b4401f;
+  --wknd:#eceef2; --hol:#fde7d6; --hol-ink:#9a4a12;
+  --v:#92d050; --v-ink:#16340a; --g:#9dc3e6; --g-ink:#0f2d4a; --p:#ffd966; --p-ink:#4a3a00;
+  --mine:#fff8db;
+  --f-sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#12161d; --surface:#1a2029; --ink:#e6e9ef; --muted:#9aa3b2; --line:#2c3440; --grid:#323b48;
+  --accent:#6ea2f0; --accent-soft:#1d2a3f; --warn:#f08a6a;
+  --wknd:#222934; --hol:#3a2a1c; --hol-ink:#f2b98a; --mine:#2c2a1c; color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-sans);font-size:14px;line-height:1.45}
+.wrap{max-width:1800px;margin:0 auto;padding:20px 18px 40px}
+header{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:flex-end;justify-content:space-between;margin-bottom:14px}
+h1{font-size:1.45rem;margin:0;letter-spacing:-.01em}
+.sub{color:var(--muted);margin:2px 0 0}
+.status{font-size:.78rem;color:var(--muted);font-family:var(--f-mono)}
+.status.err{color:var(--warn)}
+.who{display:flex;gap:10px;align-items:center;font-size:.85rem;color:var(--muted)}
+button,select,input{font:inherit;color:var(--ink)}
+button{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:6px 12px;cursor:pointer;font-weight:500}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+select,input[type=search],input[type=email]{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:6px 10px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px}
+#login{max-width:420px;margin:60px auto}
+#login form{display:grid;gap:10px;margin-top:12px}
+.hint{font-size:.78rem;color:var(--muted)}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;margin-bottom:10px}
+.toolbar .grow{flex:1}
+.modes{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden;background:var(--surface)}
+.modes button{border:0;border-radius:0;padding:6px 12px;display:flex;gap:6px;align-items:center}
+.modes button[aria-pressed=true]{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.sw{display:inline-block;width:14px;height:14px;border-radius:3px;border:1px solid rgba(0,0,0,.15)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.78rem;color:var(--muted);align-items:center}
+.legend span{display:inline-flex;gap:5px;align-items:center}
+.chk{display:inline-flex;gap:6px;align-items:center;font-size:.85rem}
+
+/* --- hoja tipo Excel --- */
+.sheet{overflow:auto;max-height:calc(100vh - 210px);border:1px solid var(--grid);background:var(--surface);border-radius:4px}
+table{border-collapse:separate;border-spacing:0;font-size:12px;user-select:none}
+th,td{border-right:1px solid var(--grid);border-bottom:1px solid var(--grid);padding:0;height:24px;text-align:center;white-space:nowrap;background:var(--surface)}
+thead th{position:sticky;z-index:3;font-weight:700}
+thead tr.r1 th{top:0;height:26px;font-size:13px}
+thead tr.r1 th.mstart{text-align:left;padding-left:10px}
+thead tr.r2 th{top:26px}
+thead tr.r3 th{top:50px;font-family:var(--f-mono);font-weight:500;font-size:11px}
+.c-area,.c-name{position:sticky;z-index:2;text-align:left;padding:0 8px;font-weight:700}
+.c-area{left:0;width:190px;min-width:190px;max-width:190px;overflow:hidden;text-overflow:ellipsis}
+.c-name{left:190px;width:250px;min-width:250px;max-width:250px;overflow:hidden;text-overflow:ellipsis;border-right:2px solid var(--grid)}
+thead .c-area,thead .c-name{z-index:4}
+.c-tot{position:sticky;right:0;z-index:2;width:52px;min-width:52px;font-family:var(--f-mono);font-weight:600;border-left:2px solid var(--grid)}
+thead .c-tot{z-index:4}
+.day{width:26px;min-width:26px;max-width:26px}
+td.day{cursor:pointer;font-weight:700;font-size:11px}
+td.day.ro{cursor:default}
+.wk{background:var(--wknd)}
+.hol{background:var(--hol);color:var(--hol-ink)}
+.mstart{border-left:2px solid var(--ink)}
+td.day.V{background:var(--v);color:var(--v-ink)}
+td.day.G{background:var(--g);color:var(--g-ink)}
+td.day.P{background:var(--p);color:var(--p-ink)}
+td.day:not(.ro):hover{outline:2px solid var(--accent);outline-offset:-2px}
+tr.mine td.c-name,tr.mine td.c-area{background:var(--mine)}
+tr.mine td.c-name::after{content:" · tú";color:var(--accent);font-weight:600}
+tr.grp td.c-area{border-top:2px solid var(--grid)}
+tfoot td{position:sticky;bottom:0;z-index:2;font-family:var(--f-mono);font-weight:600;background:var(--accent-soft);border-top:2px solid var(--grid)}
+tfoot .c-area,tfoot .c-name{z-index:3}
+tfoot td.hot{color:var(--warn)}
+.foot{margin-top:8px;font-size:.78rem;color:var(--muted)}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Pronóstico de Vacaciones · CCT</h1>
+      <p class="sub">1 de diciembre 2026 al 31 de enero 2027 · Dirección de Sistemas y sus oficinas</p>
+    </div>
+    <div class="who">
+      <span class="status" id="status"></span>
+      <span id="who" hidden></span>
+      <button id="btnOut" hidden>Salir</button>
+    </div>
+  </header>
+
+  <section id="login" class="card" hidden>
+    <h2 style="margin:0;font-size:1.05rem">Entrar</h2>
+    <p class="hint" style="margin:4px 0 0">Te enviamos un enlace de acceso a tu correo de Bafar.</p>
+    <form id="loginForm">
+      <input id="loginEmail" type="email" autocomplete="email" placeholder="nombre@bafar.com.mx" required>
+      <button class="primary" type="submit">Enviar enlace</button>
+      <span class="hint" id="loginMsg"></span>
+    </form>
+  </section>
+
+  <section id="setup" class="card" hidden>
+    <strong>Falta preparar la base.</strong>
+    <p class="hint">Ejecuta <code>vacaciones_cct_setup.sql</code> en el SQL Editor de Supabase (crea las tablas y carga la plantilla de CCT).</p>
+    <p class="hint" id="setupErr"></p>
+  </section>
+
+  <main id="app" hidden>
+    <div class="toolbar">
+      <div class="modes" role="group" aria-label="Marcar como">
+        <button data-mode="V" aria-pressed="true"><span class="sw" style="background:var(--v)"></span>V · Vacaciones</button>
+        <button data-mode="G" aria-pressed="false"><span class="sw" style="background:var(--g)"></span>G · Guardia</button>
+        <button data-mode="P" aria-pressed="false"><span class="sw" style="background:var(--p)"></span>P · Permiso</button>
+      </div>
+      <select id="fArea" aria-label="Filtrar por área"><option value="">Todas las áreas</option></select>
+      <input id="fText" type="search" placeholder="Buscar nombre…" aria-label="Buscar nombre">
+      <label class="chk"><input type="checkbox" id="fMine"> Solo mi fila</label>
+      <span class="grow"></span>
+      <button id="btnXlsx">Descargar Excel</button>
+    </div>
+    <div class="legend" style="margin-bottom:8px">
+      <span>Clic en un día para marcarlo; clic de nuevo para quitarlo. Arrastra para marcar varios días.</span>
+      <span><i class="sw" style="background:var(--wknd)"></i>Fin de semana</span>
+      <span><i class="sw" style="background:var(--hol)"></i>Festivo</span>
+    </div>
+    <div class="sheet" id="sheet"></div>
+    <p class="foot">Días = días hábiles (lunes a viernes, sin festivos) marcados como V. La fila inferior cuenta cuántas personas de la vista actual estarán fuera (V o P) cada día. Plantilla tomada de SAP HCM (unidad organizativa CCT, 50034323, con sus sub-unidades).</p>
+  </main>
+</div>
+
+<script src="../config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js" defer></script>
+<script>
+(function(){
+  const CFG = window.APP_CONFIG || {};
+  const DOMAIN = (CFG.ALLOWED_DOMAIN || "bafar.com.mx").toLowerCase();
+  const $ = id => document.getElementById(id);
+  const MES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+  const LET = ["D","L","M","M","J","V","S"];
+  const FESTIVOS = { "2026-12-25":"Navidad", "2027-01-01":"Año Nuevo" };
+  const START = new Date(2026,11,1), END = new Date(2027,0,31);
+
+  const iso = d => d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+  const DAYS = [];
+  for(let d=new Date(START); d<=END; d.setDate(d.getDate()+1)){
+    const dow=d.getDay(), k=iso(d);
+    DAYS.push({ k, d:d.getDate(), m:d.getMonth(), y:d.getFullYear(), dow, wk:(dow===0||dow===6), hol:FESTIVOS[k]||"" });
+  }
+
+  let sb=null, me="", emps=[], marks=new Map(), mode="V";
+  const key=(p,f)=>p+"|"+f;
+
+  function status(t,err){ const s=$("status"); s.textContent=t||""; s.classList.toggle("err",!!err); }
+  function esc(s){ return String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+  // ---------- render ----------
+  function visible(){
+    const a=$("fArea").value, t=$("fText").value.trim().toLowerCase(), mine=$("fMine").checked;
+    return emps.filter(e => (!a||e.area===a) && (!t||e.nombre.toLowerCase().includes(t)) && (!mine || (e.email||"").toLowerCase()===me));
+  }
+  function workDays(p){
+    let n=0; for(const d of DAYS){ if(!d.wk && !d.hol && (marks.get(key(p,d.k))||{}).tipo==="V") n++; } return n;
+  }
+  function render(){
+    const list=visible();
+    // fila 1: meses
+    let months=[], cur=null;
+    for(const d of DAYS){ if(!cur||cur.m!==d.m){ cur={m:d.m,y:d.y,n:0}; months.push(cur);} cur.n++; }
+    let h='<table><thead><tr class="r1"><th class="c-area" rowspan="3">Área</th><th class="c-name">Mes</th>';
+    months.forEach(mo=>{ h+=`<th class="mstart" colspan="${mo.n}">${MES[mo.m]} ${mo.y}</th>`; });
+    h+='<th class="c-tot" rowspan="3">Días</th></tr><tr class="r2"><th class="c-name">Día</th>';
+    DAYS.forEach(d=>{ h+=`<th class="day ${d.wk?"wk":""} ${d.hol?"hol":""} ${d.d===1?"mstart":""}" title="${d.hol}">${LET[d.dow]}</th>`; });
+    h+='</tr><tr class="r3"><th class="c-name">Nombre / Fecha</th>';
+    DAYS.forEach(d=>{ h+=`<th class="day ${d.wk?"wk":""} ${d.hol?"hol":""} ${d.d===1?"mstart":""}" title="${d.k}${d.hol?" · "+d.hol:""}">${d.d}</th>`; });
+    h+='</tr></thead><tbody>';
+    let prevArea=null;
+    for(const e of list){
+      const isMine = me && (e.email||"").toLowerCase()===me;
+      const first = e.area!==prevArea; prevArea=e.area;
+      h+=`<tr class="${isMine?"mine":""} ${first?"grp":""}"><td class="c-area" title="${esc(e.area)}">${esc(e.area)}</td><td class="c-name" title="${esc(e.nombre)} · ${esc(e.puesto||"")} · #${e.pernr}">${esc(e.nombre)}</td>`;
+      for(const d of DAYS){
+        const m=marks.get(key(e.pernr,d.k)), t=m?m.tipo:"";
+        const tip = d.k + (d.hol?" · "+d.hol:"") + (m&&m.actualizado_por?" · capturó "+m.actualizado_por:"");
+        h+=`<td class="day ${t} ${d.wk?"wk":""} ${d.hol?"hol":""} ${d.d===1?"mstart":""}" data-p="${e.pernr}" data-f="${d.k}" title="${esc(tip)}">${t}</td>`;
+      }
+      h+=`<td class="c-tot" data-tot="${e.pernr}">${workDays(e.pernr)||""}</td></tr>`;
+    }
+    if(!list.length) h+=`<tr><td class="c-area"></td><td class="c-name" style="font-weight:400;color:var(--muted)">Sin resultados</td>${DAYS.map(()=>"<td></td>").join("")}<td class="c-tot"></td></tr>`;
+    h+='</tbody><tfoot><tr><td class="c-area">Total</td><td class="c-name">Personas fuera</td>';
+    DAYS.forEach(d=>{ h+=`<td class="day" data-cnt="${d.k}"></td>`; });
+    h+='<td class="c-tot"></td></tr></tfoot></table>';
+    const sc=$("sheet"), sx=sc.scrollLeft, sy=sc.scrollTop;
+    sc.innerHTML=h; sc.scrollLeft=sx; sc.scrollTop=sy;
+    counts(list);
+  }
+  function counts(list){
+    list = list || visible();
+    const ids=new Set(list.map(e=>e.pernr));
+    for(const d of DAYS){
+      let n=0; for(const p of ids){ const m=marks.get(key(p,d.k)); if(m&&(m.tipo==="V"||m.tipo==="P")) n++; }
+      const c=document.querySelector(`[data-cnt="${d.k}"]`);
+      if(c){ c.textContent=n||""; c.classList.toggle("hot", n>0 && ids.size>0 && n/ids.size>=0.5); }
+    }
+  }
+  function paintCell(td){
+    const p=+td.dataset.p, f=td.dataset.f, m=marks.get(key(p,f));
+    td.classList.remove("V","G","P"); td.textContent="";
+    if(m){ td.classList.add(m.tipo); td.textContent=m.tipo; }
+    const tot=document.querySelector(`[data-tot="${p}"]`); if(tot) tot.textContent=workDays(p)||"";
+  }
+
+  // ---------- captura ----------
+  let drag=null; // {action:'set'|'clear', cells:Set}
+  const sheet=$("sheet");
+  sheet.addEventListener("pointerdown",ev=>{
+    const td=ev.target.closest("td.day[data-p]"); if(!td||ev.button!==0) return;
+    ev.preventDefault();
+    const cur=marks.get(key(+td.dataset.p,td.dataset.f));
+    drag={ action:(cur&&cur.tipo===mode)?"clear":"set", pernr:td.dataset.p, cells:new Set() };
+    apply(td);
+  });
+  sheet.addEventListener("pointerover",ev=>{
+    if(!drag) return;
+    const td=ev.target.closest("td.day[data-p]");
+    if(td && td.dataset.p===drag.pernr) apply(td);
+  });
+  window.addEventListener("pointerup",()=>{ if(drag){ const d=drag; drag=null; save(d); } });
+  function apply(td){
+    const k=key(+td.dataset.p,td.dataset.f); if(drag.cells.has(k)) return;
+    drag.cells.add(k);
+    drag.prev = drag.prev || new Map();
+    drag.prev.set(k, marks.get(k));
+    if(drag.action==="clear") marks.delete(k);
+    else marks.set(k,{ pernr:+td.dataset.p, fecha:td.dataset.f, tipo:mode, actualizado_por:me });
+    paintCell(td);
+  }
+  async function save(d){
+    counts();
+    const ups=[], dels=[];
+    for(const k of d.cells){ const [p,f]=k.split("|"); if(d.action==="clear") dels.push(f); else ups.push({pernr:+p,fecha:f,tipo:mode,actualizado_por:me,actualizado:new Date().toISOString()}); }
+    status("Guardando…");
+    let error=null;
+    if(ups.length){ ({error}=await sb.from("vac_pronostico").upsert(ups,{onConflict:"pernr,fecha"})); }
+    if(!error && dels.length){ ({error}=await sb.from("vac_pronostico").delete().eq("pernr",+d.pernr).in("fecha",dels)); }
+    if(error){
+      for(const [k,v] of d.prev){ if(v) marks.set(k,v); else marks.delete(k); }
+      render(); status("No se pudo guardar: "+error.message, true); return;
+    }
+    status("Guardado · "+new Date().toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"}));
+  }
+
+  document.querySelectorAll(".modes button").forEach(b=>b.addEventListener("click",()=>{
+    mode=b.dataset.mode; document.querySelectorAll(".modes button").forEach(x=>x.setAttribute("aria-pressed", x===b));
+  }));
+  ["fArea","fText","fMine"].forEach(id=>$(id).addEventListener("input",render));
+
+  // ---------- Excel ----------
+  $("btnXlsx").addEventListener("click",()=>{
+    if(!window.XLSX){ status("Cargando exportador… intenta de nuevo", true); return; }
+    const list=visible(), X=window.XLSX;
+    const B={style:"thin",color:{rgb:"999999"}}, border={top:B,bottom:B,left:B,right:B};
+    const hdr={font:{bold:true},alignment:{horizontal:"center",vertical:"center"},border};
+    const fills={V:"92D050",G:"9DC3E6",P:"FFD966"};
+    const rows=[], merges=[];
+    const r1=["Área","Mes"], r2=["","Día"], r3=["","Nombre"];
+    let c=2, cur=null, startC=2;
+    DAYS.forEach((d,i)=>{
+      if(cur!==d.m){ if(cur!==null) merges.push({s:{r:0,c:startC},e:{r:0,c:c-1}}); cur=d.m; startC=c; r1.push(MES[d.m]+" "+d.y);} else r1.push("");
+      r2.push(LET[d.dow]); r3.push(new Date(d.y,d.m,d.d)); c++;
+    });
+    merges.push({s:{r:0,c:startC},e:{r:0,c:c-1}}, {s:{r:0,c:0},e:{r:2,c:0}});
+    r1.push("Días"); r2.push(""); r3.push(""); merges.push({s:{r:0,c:c},e:{r:2,c:c}});
+    rows.push(r1,r2,r3);
+    list.forEach(e=>{ const r=[e.area,e.nombre]; DAYS.forEach(d=>{ const m=marks.get(key(e.pernr,d.k)); r.push(m?m.tipo:""); }); r.push(workDays(e.pernr)||""); rows.push(r); });
+    const ws=X.utils.aoa_to_sheet(rows,{cellDates:true});
+    ws["!merges"]=merges;
+    ws["!cols"]=[{wch:28},{wch:34},...DAYS.map(()=>({wch:4})),{wch:6}];
+    ws["!freeze"]={xSplit:2,ySplit:3};
+    for(let R=0;R<rows.length;R++) for(let C=0;C<rows[R].length;C++){
+      const ref=X.utils.encode_cell({r:R,c:C}); if(!ws[ref]) ws[ref]={t:"s",v:""};
+      const cell=ws[ref], d=DAYS[C-2];
+      if(R<3){ cell.s={...hdr}; if(R===2 && d){ cell.z="dd"; cell.s={...hdr,font:{bold:false,sz:9}}; } }
+      else { cell.s={border,alignment:{horizontal:C>1?"center":"left"},font:{bold:C<2}}; }
+      if(d && (d.wk||d.hol) && !(R>=3 && fills[cell.v])) cell.s.fill={patternType:"solid",fgColor:{rgb:d.hol?"FCE4D6":"E7E6E6"}};
+      if(R>=3 && fills[cell.v]) cell.s.fill={patternType:"solid",fgColor:{rgb:fills[cell.v]}};
+    }
+    const wb=X.utils.book_new(); X.utils.book_append_sheet(wb,ws,"Calendario");
+    X.writeFile(wb,"Vacaciones CCT Dic2026-Ene2027.xlsx");
+  });
+
+  // ---------- datos ----------
+  async function load(){
+    status("Cargando…");
+    const [{data:e,error:e1},{data:v,error:e2}] = await Promise.all([
+      sb.from("vac_empleados").select("pernr,nombre,area,orden,puesto,email").eq("activo",true).order("orden").order("nombre"),
+      sb.from("vac_pronostico").select("pernr,fecha,tipo,actualizado_por").gte("fecha",DAYS[0].k).lte("fecha",DAYS[DAYS.length-1].k)
+    ]);
+    if(e1||e2){
+      $("app").hidden=true; $("setup").hidden=false; $("setupErr").textContent=(e1||e2).message; status("Base sin preparar",true); return;
+    }
+    if(!e.length){ $("app").hidden=true; $("setup").hidden=false; $("setupErr").textContent="La tabla vac_empleados está vacía."; status(""); return; }
+    $("setup").hidden=true; $("app").hidden=false;
+    emps=e; marks=new Map(); v.forEach(r=>marks.set(key(r.pernr,r.fecha),r));
+    const sel=$("fArea"), val=sel.value;
+    sel.innerHTML='<option value="">Todas las áreas</option>'+[...new Set(emps.map(x=>x.area))].map(a=>`<option ${a===val?"selected":""}>${esc(a)}</option>`).join("");
+    const mine=emps.some(x=>(x.email||"").toLowerCase()===me); $("fMine").disabled=!mine; $("fMine").parentElement.title=mine?"":"Tu correo no está ligado a un número de empleado en la plantilla";
+    render(); status(emps.length+" colaboradores · en vivo");
+  }
+  let realtime=null, rt=null;
+  function subscribe(){
+    if(realtime) return;
+    realtime=sb.channel("vac-cct").on("postgres_changes",{event:"*",schema:"public",table:"vac_pronostico"},()=>{
+      if(drag) return; clearTimeout(rt); rt=setTimeout(load,400);
+    }).subscribe();
+  }
+
+  // ---------- acceso ----------
+  function showLogin(){ $("login").hidden=false; $("app").hidden=true; $("who").hidden=true; $("btnOut").hidden=true; }
+  function showApp(email){ me=(email||"").toLowerCase(); $("login").hidden=true; $("who").hidden=false; $("who").textContent=me; $("btnOut").hidden=false; }
+  $("loginForm").addEventListener("submit",async ev=>{
+    ev.preventDefault();
+    const email=$("loginEmail").value.trim().toLowerCase();
+    if(!email.endsWith("@"+DOMAIN)){ $("loginMsg").textContent="Usa tu correo @"+DOMAIN; return; }
+    $("loginMsg").textContent="Enviando…";
+    const {error}=await sb.auth.signInWithOtp({email,options:{emailRedirectTo:location.href.split("#")[0]}});
+    $("loginMsg").textContent=error?("Error: "+error.message):"Listo. Revisa tu correo y abre el enlace en este navegador.";
+  });
+  $("btnOut").addEventListener("click",async()=>{ await sb.auth.signOut(); emps=[]; marks=new Map(); showLogin(); status(""); });
+
+  async function start(){
+    if(!(CFG.SUPABASE_URL && CFG.SUPABASE_ANON_KEY && window.supabase)){ status("Falta config.js de Supabase",true); return; }
+    sb=window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY);
+    sb.auth.onAuthStateChange((_e,session)=>{
+      if(session){
+        if(!(session.user.email||"").toLowerCase().endsWith("@"+DOMAIN)){ sb.auth.signOut(); showLogin(); $("loginMsg").textContent="Solo correos @"+DOMAIN; return; }
+        showApp(session.user.email); load(); subscribe();
+      } else showLogin();
+    });
+    const {data}=await sb.auth.getSession(); if(!data.session) showLogin();
+  }
+  start();
+})();
+</script>
+</body>
+</html>
