@@ -68,3 +68,14 @@ Calendario tipo Excel (1 dic 2026 – 31 ene 2027) donde los colaboradores de la
 - Esquema: [`supabase/vacaciones.sql`](supabase/vacaciones.sql). La plantilla de empleados (nombres y números de empleado tomados de SAP) se carga con un script aparte que **no** se publica en este repo.
 - Agrega `https://urkidi04.github.io/HubInnovacion/vacaciones/` en **Authentication → URL Configuration → Redirect URLs**.
 - Botón **Descargar Excel**: genera la hoja con el mismo formato (meses combinados, fines de semana y festivos sombreados, V en verde).
+
+---
+
+## Admisibilidad de CC-nóminas por infotipo (`/ccnominas/`)
+
+Consulta de solo lectura del catálogo SAP HCM **T512Z** (vista V_T512Z): qué conceptos de nómina (CC-nóminas) se permiten en cada infotipo, con textos de T512T y T582S. Vista de lista con búsqueda y orden, matriz CC-nómina × infotipo y descarga a Excel. Usa el mismo proyecto de Supabase y el mismo acceso por correo `@bafar.com.mx`.
+
+- URL: `https://urkidi04.github.io/HubInnovacion/ccnominas/`
+- Esquema: [`supabase/ccnominas.sql`](supabase/ccnominas.sql). Los datos (extraídos de K8E, agrupación 32) se cargan con un script aparte que **no** se publica en este repo.
+- Agrega `https://urkidi04.github.io/HubInnovacion/ccnominas/` en **Authentication → URL Configuration → Redirect URLs**.
+- Programa equivalente en SAP: `ZHRRE_ADMISIB_CCNOM`.
