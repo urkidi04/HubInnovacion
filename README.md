@@ -73,7 +73,12 @@ Calendario tipo Excel (1 dic 2026 – 31 ene 2027) donde los colaboradores de la
 
 ## Admisibilidad de CC-nóminas por infotipo (`/ccnominas/`)
 
-Consulta de solo lectura del catálogo SAP HCM **T512Z** (vista V_T512Z): qué conceptos de nómina (CC-nóminas) se permiten en cada infotipo, con textos de T512T y T582S. Vista de lista con búsqueda y orden, matriz CC-nómina × infotipo y descarga a Excel. Usa el mismo proyecto de Supabase y el mismo acceso por correo `@bafar.com.mx`.
+Consulta de solo lectura de qué conceptos de nómina (CC-nóminas) se pueden capturar:
+
+- **Por infotipo:** catálogo SAP HCM **T512Z** (vista V_T512Z), con textos de T512T y T582S.
+- **Por sociedad / división / subdivisión y grupo / área de personal:** reglas de **T511** (WKTYZ y ABTYZ) contra las agrupaciones de **T001P-WKTYP** y **T503-ABTYP**, con la misma lógica que la validación estándar de SAP (`CL_HRPAD00_WTYP_PERMISSIBILITY`).
+
+Vistas de lista (clic en un renglón para ver dónde se permite), matriz CC-nómina × infotipo, consulta por estructura organizativa y descarga a Excel. Usa el mismo proyecto de Supabase y el mismo acceso por correo `@bafar.com.mx`.
 
 - URL: `https://urkidi04.github.io/HubInnovacion/ccnominas/`
 - Esquema: [`supabase/ccnominas.sql`](supabase/ccnominas.sql). Los datos (extraídos de K8E, agrupación 32) se cargan con un script aparte que **no** se publica en este repo.

@@ -72,6 +72,29 @@ mark{background:#fff1a8;color:inherit;border-radius:2px}
 .mx th.sticky,.mx td.sticky{position:sticky;left:0;background:var(--surface);z-index:1}
 .mx thead th.sticky{z-index:3}
 .foot{font-size:.78rem;color:var(--muted);margin-top:10px}
+.org{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px;padding:10px 12px;background:var(--surface);border:1px solid var(--line);border-radius:8px}
+.org label{font-size:.75rem;color:var(--muted);display:grid;gap:2px}
+.org select{max-width:260px}
+.pill{display:inline-block;padding:1px 8px;border-radius:999px;font-size:12px;font-weight:600}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}
+.pill.warn{background:#fff3d6;color:#8a5a00}
+.pill.no{background:#fde7e2;color:var(--warn)}
+@media (prefers-color-scheme:dark){.pill.warn{background:#3a2f12;color:#f2c76a}.pill.no{background:#3a1f1a}}
+tbody tr.clk{cursor:pointer}
+dialog{border:1px solid var(--line);border-radius:12px;padding:0;max-width:900px;width:calc(100% - 32px);background:var(--surface);color:var(--ink)}
+dialog::backdrop{background:rgba(10,15,25,.45)}
+.dlg-h{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:16px 18px;border-bottom:1px solid var(--line)}
+.dlg-h h2{margin:0;font-size:1.1rem}
+.dlg-b{padding:14px 18px;max-height:70vh;overflow:auto}
+.dlg-b h3{font-size:.9rem;margin:14px 0 6px}
+.soc{border:1px solid var(--grid);border-radius:8px;margin-bottom:8px}
+.soc summary{padding:8px 12px;cursor:pointer;font-weight:600;display:flex;justify-content:space-between;gap:10px}
+.soc summary span{font-weight:400;color:var(--muted);font-size:.85rem}
+.soc ul{margin:0;padding:4px 14px 10px 30px;columns:2;font-size:13px}
+.soc li{break-inside:avoid}
+.soc li.n{color:var(--muted);text-decoration:line-through}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+
 </style>
 </head>
 <body>
@@ -115,13 +138,23 @@ mark{background:#fff1a8;color:inherit;border-radius:2px}
       <div class="modes" role="group" aria-label="Vista">
         <button data-view="list" aria-pressed="true">Lista</button>
         <button data-view="matrix" aria-pressed="false">Matriz CC-nómina × infotipo</button>
+        <button data-view="org" aria-pressed="false">Por sociedad / división / subdivisión</button>
       </div>
       <select id="fInfty" aria-label="Infotipo"><option value="">Todos los infotipos</option></select>
       <input id="fText" type="search" placeholder="Buscar CC-nómina o texto (p. ej. 1000, prima, vales)…" aria-label="Buscar">
       <span class="grow"></span>
       <button id="btnXlsx">Descargar Excel</button>
     </div>
+    <div class="org" id="orgBar" hidden>
+      <label>Sociedad<select id="oBukrs"></select></label>
+      <label>División<select id="oWerks"></select></label>
+      <label>Subdivisión<select id="oBtrtl"></select></label>
+      <label>Grupo de personal<select id="oPersg"></select></label>
+      <label>Área de personal<select id="oPersk"></select></label>
+      <label style="align-self:end"><span class="chk" style="display:flex;gap:6px;align-items:center;font-size:.85rem;color:var(--ink)"><input type="checkbox" id="oNo"> Ver también no permitidas</span></label>
+    </div>
     <div class="sheet" id="sheet"></div>
+    <dialog id="dlg"><div class="dlg-h"><div><h2 id="dlgT"></h2><p class="hint" id="dlgS" style="margin:2px 0 0"></p></div><button id="dlgX">Cerrar</button></div><div class="dlg-b" id="dlgB"></div></dialog>
     <p class="foot" id="foot"></p>
   </main>
 </div>
@@ -129,185 +162,6 @@ mark{background:#fff1a8;color:inherit;border-radius:2px}
 <script src="../config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js" defer></script>
-<script>
-(() => {
-  const CFG = window.APP_CONFIG || {};
-  const DOMAIN = (CFG.ALLOWED_DOMAIN || "bafar.com.mx").toLowerCase();
-  const $ = id => document.getElementById(id);
-  const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-  const fdate = d => d ? d.split("-").reverse().join("/") : "";
-
-  let sb = null, rows = [], infotipos = [], view = "list", sort = {k:"infty", dir:1};
-
-  function status(t, err){ const s=$("status"); s.textContent=t||""; s.classList.toggle("err", !!err); }
-
-  // ---------- filtros ----------
-  function filtered(){
-    const it = $("fInfty").value, q = $("fText").value.trim().toLowerCase();
-    return rows.filter(r => (!it || r.infty === it) &&
-      (!q || r.lgart.toLowerCase().includes(q) || (r.lgtxt||"").toLowerCase().includes(q)));
-  }
-  function hl(text){
-    const q = $("fText").value.trim(); const s = esc(text);
-    if(!q) return s;
-    const i = String(text??"").toLowerCase().indexOf(q.toLowerCase());
-    if(i < 0) return s;
-    const t = String(text);
-    return esc(t.slice(0,i)) + "<mark>" + esc(t.slice(i,i+q.length)) + "</mark>" + esc(t.slice(i+q.length));
-  }
-
-  // ---------- render ----------
-  function renderKpis(){
-    const sel = $("fInfty").value;
-    let h = `<div class="kpi total"><b>TOTAL</b><span>Registros admisibles</span><strong>${rows.length}</strong></div>`;
-    for(const it of infotipos){
-      h += `<button class="kpi" data-it="${it.infty}" aria-pressed="${sel===it.infty}" title="${esc(it.itext)}"><b>IT ${it.infty}</b><span>${esc(it.itext)}</span><strong>${it.n}</strong></button>`;
-    }
-    $("kpis").innerHTML = h;
-  }
-
-  function renderList(list){
-    const cols = [["infty","Infotipo"],["itext","Texto infotipo"],["lgart","CC-nómina"],["lgtxt","Texto CC-nómina"],["begda","Inicio validez"],["endda","Fin validez"]];
-    const k = sort.k, d = sort.dir;
-    list = [...list].sort((a,b) => String(a[k]??"").localeCompare(String(b[k]??""),"es") * d || a.lgart.localeCompare(b.lgart));
-    let h = "<table><thead><tr>";
-    cols.forEach(([c,t]) => h += `<th data-k="${c}" ${c===k?`aria-sort="${d>0?"ascending":"descending"}"`:""}>${t}</th>`);
-    h += "</tr></thead><tbody>";
-    for(const r of list){
-      h += `<tr><td class="code">${r.infty}</td><td>${esc(r.itext)}</td><td class="code">${hl(r.lgart)}</td>` +
-           (r.lgtxt ? `<td>${hl(r.lgtxt)}</td>` : `<td class="na">sin texto en T512T</td>`) +
-           `<td class="code">${fdate(r.begda)}</td><td class="code">${fdate(r.endda)}</td></tr>`;
-    }
-    $("sheet").innerHTML = h + "</tbody></table>";
-  }
-
-  function renderMatrix(list){
-    const its = infotipos.filter(it => !$("fInfty").value || it.infty === $("fInfty").value);
-    const by = new Map();
-    for(const r of list){
-      if(!by.has(r.lgart)) by.set(r.lgart, {lgart:r.lgart, lgtxt:r.lgtxt, set:new Set()});
-      by.get(r.lgart).set.add(r.infty);
-    }
-    const lg = [...by.values()].sort((a,b) => a.lgart.localeCompare(b.lgart));
-    let h = `<table class="mx"><thead><tr><th class="sticky" style="cursor:default">CC-nómina</th><th style="cursor:default">Texto</th>`;
-    its.forEach(it => h += `<th class="it" title="${esc(it.itext)}"><small>${it.infty}</small> ${esc(it.itext)}</th>`);
-    h += `<th class="num" style="cursor:default">IT</th></tr></thead><tbody>`;
-    for(const w of lg){
-      h += `<tr><td class="sticky code">${hl(w.lgart)}</td>` + (w.lgtxt?`<td>${hl(w.lgtxt)}</td>`:`<td class="na">sin texto</td>`);
-      its.forEach(it => { const y = w.set.has(it.infty); h += `<td class="c ${y?"y":""}" title="${w.lgart} · IT ${it.infty}">${y?"✓":""}</td>`; });
-      h += `<td class="num">${w.set.size}</td></tr>`;
-    }
-    $("sheet").innerHTML = h + "</tbody></table>";
-  }
-
-  function render(){
-    renderKpis();
-    const list = filtered();
-    view === "list" ? renderList(list) : renderMatrix(list);
-    const ccs = new Set(list.map(r => r.lgart)).size;
-    status(`${list.length} registros · ${ccs} CC-nóminas`);
-  }
-
-  // ---------- eventos ----------
-  $("kpis").addEventListener("click", e => {
-    const b = e.target.closest("button.kpi"); if(!b) return;
-    $("fInfty").value = $("fInfty").value === b.dataset.it ? "" : b.dataset.it; render();
-  });
-  $("fInfty").addEventListener("change", render);
-  let t; $("fText").addEventListener("input", () => { clearTimeout(t); t = setTimeout(render, 150); });
-  document.querySelector(".modes").addEventListener("click", e => {
-    const b = e.target.closest("button[data-view]"); if(!b) return;
-    view = b.dataset.view;
-    document.querySelectorAll(".modes button").forEach(x => x.setAttribute("aria-pressed", x === b));
-    render();
-  });
-  $("sheet").addEventListener("click", e => {
-    const th = e.target.closest("th[data-k]"); if(!th) return;
-    sort = {k: th.dataset.k, dir: sort.k === th.dataset.k ? -sort.dir : 1}; render();
-  });
-
-  $("btnXlsx").addEventListener("click", () => {
-    const X = window.XLSX; if(!X){ status("Cargando librería de Excel…"); return; }
-    const list = filtered();
-    const hdr = {font:{bold:true}, fill:{patternType:"solid", fgColor:{rgb:"E7EEFA"}}};
-    const wb = X.utils.book_new();
-    const a = [["Infotipo","Texto infotipo","CC-nómina","Texto CC-nómina","Inicio validez","Fin validez"],
-      ...list.map(r => [r.infty, r.itext||"", r.lgart, r.lgtxt||"", fdate(r.begda), fdate(r.endda)])];
-    const ws = X.utils.aoa_to_sheet(a);
-    for(let C=0; C<6; C++) ws[X.utils.encode_cell({r:0,c:C})].s = hdr;
-    ws["!cols"] = [{wch:9},{wch:36},{wch:11},{wch:42},{wch:13},{wch:13}];
-    X.utils.book_append_sheet(wb, ws, "Catálogo");
-    // Matriz
-    const its = infotipos.filter(it => !$("fInfty").value || it.infty === $("fInfty").value);
-    const by = new Map();
-    list.forEach(r => { if(!by.has(r.lgart)) by.set(r.lgart,{lgtxt:r.lgtxt, s:new Set()}); by.get(r.lgart).s.add(r.infty); });
-    const m = [["CC-nómina","Texto", ...its.map(i => i.infty+" "+i.itext)],
-      ...[...by.entries()].sort((x,y)=>x[0].localeCompare(y[0])).map(([k,v]) => [k, v.lgtxt||"", ...its.map(i => v.s.has(i.infty)?"X":"")])];
-    const wm = X.utils.aoa_to_sheet(m);
-    for(let C=0; C<m[0].length; C++) wm[X.utils.encode_cell({r:0,c:C})].s = {...hdr, alignment:{wrapText:true, vertical:"top"}};
-    wm["!cols"] = [{wch:11},{wch:40}, ...its.map(() => ({wch:12}))];
-    X.utils.book_append_sheet(wb, wm, "Matriz");
-    X.writeFile(wb, "Admisibilidad CC-nominas K8E.xlsx");
-  });
-
-  // ---------- datos ----------
-  async function load(){
-    status("Cargando…");
-    const all = []; let from = 0;
-    while(true){
-      const {data, error} = await sb.from("ccnom_admisibilidad")
-        .select("sistema,molga,infty,itext,lgart,lgtxt,begda,endda,extraido")
-        .order("infty").order("lgart").range(from, from + 999);
-      if(error){ $("app").hidden = true; $("setup").hidden = false; $("setupErr").textContent = error.message; status("Base sin preparar", true); return; }
-      all.push(...data); if(data.length < 1000) break; from += 1000;
-    }
-    if(!all.length){ $("app").hidden = true; $("setup").hidden = false; $("setupErr").textContent = "La tabla ccnom_admisibilidad está vacía."; status(""); return; }
-    rows = all;
-    const m = new Map();
-    rows.forEach(r => { if(!m.has(r.infty)) m.set(r.infty, {infty:r.infty, itext:r.itext||"", n:0}); m.get(r.infty).n++; });
-    infotipos = [...m.values()].sort((a,b) => a.infty.localeCompare(b.infty));
-    $("fInfty").innerHTML = '<option value="">Todos los infotipos</option>' + infotipos.map(i => `<option value="${i.infty}">${i.infty} · ${esc(i.itext)}</option>`).join("");
-    const r0 = rows[0], ext = new Date(r0.extraido);
-    $("sub").textContent = `SAP HCM · tabla T512Z (V_T512Z) · sistema ${r0.sistema} · agrupación de países ${r0.molga} (México)`;
-    $("foot").textContent = `Datos extraídos de ${r0.sistema} el ${ext.toLocaleDateString("es-MX",{day:"numeric",month:"long",year:"numeric"})}. ` +
-      `Textos de CC-nómina de T512T e infotipo de T582S. Consulta de solo lectura; para cambiar la admisibilidad se usa la vista V_T512Z en SAP. ` +
-      `Programa de consulta equivalente en SAP: ZHRRE_ADMISIB_CCNOM.`;
-    $("setup").hidden = true; $("app").hidden = false;
-    render();
-  }
-
-  // ---------- acceso ----------
-  function showLogin(){ $("login").hidden = false; $("app").hidden = true; $("who").hidden = true; $("btnOut").hidden = true; }
-  function showApp(email){ $("login").hidden = true; $("who").hidden = false; $("who").textContent = (email||"").toLowerCase(); $("btnOut").hidden = false; }
-  $("btnMs").addEventListener("click", async () => {
-    $("msMsg").textContent = "Abriendo Microsoft…";
-    const {error} = await sb.auth.signInWithOAuth({provider:"azure", options:{scopes:"email", redirectTo:location.href.split("#")[0].split("?")[0]}});
-    if(error) $("msMsg").textContent = "Error: " + error.message;
-  });
-  $("loginForm").addEventListener("submit", async ev => {
-    ev.preventDefault();
-    const email = $("loginEmail").value.trim().toLowerCase();
-    if(!email.endsWith("@" + DOMAIN)){ $("loginMsg").textContent = "Usa tu correo @" + DOMAIN; return; }
-    $("loginMsg").textContent = "Enviando…";
-    const {error} = await sb.auth.signInWithOtp({email, options:{emailRedirectTo:location.href.split("#")[0]}});
-    $("loginMsg").textContent = error ? ("No se pudo enviar el correo (" + error.message + "). Usa «Entrar con Microsoft».") : "Listo. Revisa tu correo y abre el enlace en este navegador.";
-  });
-  $("btnOut").addEventListener("click", async () => { await sb.auth.signOut(); rows = []; showLogin(); status(""); });
-
-  async function start(){
-    if(!(CFG.SUPABASE_URL && CFG.SUPABASE_ANON_KEY && window.supabase)){ status("Falta config.js de Supabase", true); return; }
-    sb = window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY);
-    let loaded = false;
-    sb.auth.onAuthStateChange((_e, session) => {
-      if(session){
-        if(!(session.user.email||"").toLowerCase().endsWith("@" + DOMAIN)){ sb.auth.signOut(); showLogin(); $("loginMsg").textContent = "Solo correos @" + DOMAIN; return; }
-        showApp(session.user.email); if(!loaded){ loaded = true; load(); }
-      } else { loaded = false; showLogin(); }
-    });
-    const {data} = await sb.auth.getSession(); if(!data.session) showLogin();
-  }
-  start();
-})();
-</script>
+<script src="app.js"></script>
 </body>
 </html>
